@@ -1,14 +1,6 @@
-/******************************************************************************
- * Copyright 2013-2014 Espressif Systems (Wuxi)
- *
- * FileName: uart.c
- *
- * Description: Two UART mode configration and interrupt handler.
- *              Check your hardware connection while use this mode.
- *
- *******************************************************************************/
 #include "ets_sys.h"
 #include "osapi.h"
+#include "digoleserial/uart.h"
 #include "digoleserial/digoleserial.h"
 #include "string.h"
 
@@ -32,15 +24,9 @@ digoleserial_uart1_config(void) {
   uart_div_modify(UART1, UART_CLK_FREQ / (UartDev.baut_rate));
   WRITE_PERI_REG(UART_CONF0(UART1),
       UartDev.exist_parity | UartDev.parity | (UartDev.stop_bits << UART_STOP_BIT_NUM_S) | (UartDev.data_bits << UART_BIT_NUM_S));
+  os_delay_us(100000);
 }
 
-/******************************************************************************
- * FunctionName : uart1_tx_one_char
- * Description  : Internal used function
- *                Use uart1 interface to transfer one char
- * Parameters   : uint8_t TxChar - character to tx
- * Returns      : OK
- *******************************************************************************/
 static STATUS ICACHE_FLASH_ATTR
 uart1_tx_one_char(uint8_t TxChar) {
   while (true) {
@@ -55,14 +41,6 @@ uart1_tx_one_char(uint8_t TxChar) {
   return OK;
 }
 
-/******************************************************************************
- * FunctionName : uart1_tx_string
- * Description  : Internal used function
- *                Use uart1 interface to transfer a null terminated string
- *                without any filtering
- * Parameters   : uint8_t *buf - string to tx
- * Returns      : OK
- *******************************************************************************/
 static void ICACHE_FLASH_ATTR
 uart1_tx_string(uint8_t  *buf) {
   for (;*buf;buf++){
@@ -70,19 +48,11 @@ uart1_tx_string(uint8_t  *buf) {
   }
 }
 
-/******************************************************************************
- * FunctionName : digoleserial_lcdCharacter
- * Description  : Internal used function
- *                Do some special deal while tx char is '\r' or '\n'
- * Parameters   : char c - character to tx
- * Returns      : NONE
- *******************************************************************************/
 void ICACHE_FLASH_ATTR
 digoleserial_lcdCharacter(uint8_t c) {
   if (c == '\n') {
     uart1_tx_one_char(0x0d);
     uart1_tx_string("TRT\n");
-    //uart1_tx_one_char(0x0d);
     uart1_tx_string("TT");
   } else if (c == '\r') {
   } else {
@@ -106,13 +76,7 @@ digoleserial_gotoXY(uint8_t x, uint8_t y){
   uart1_tx_one_char(x);
   uart1_tx_one_char(y);
 }
-/******************************************************************************
- * FunctionName : digoleserial_lcdString
- * Description  : use uart1 to transfer buffer
- * Parameters   : uint8_t *buf - point to send buffer
- *                uint16 len - buffer len
- * Returns      :
- *******************************************************************************/
+
 void ICACHE_FLASH_ATTR
 digoleserial_lcdString(uint8_t *buf) {
   digoleserial_lcdNString(buf, strlen(buf));
@@ -120,8 +84,13 @@ digoleserial_lcdString(uint8_t *buf) {
 
 void ICACHE_FLASH_ATTR
 digoleserial_enableCursor(bool cursorOn){
-  uart1_tx_string("CS");
-  uart1_tx_one_char(cursorOn?'1':'0');
+  uart1_tx_string(cursorOn?"CS1":"CS0");
+  uart1_tx_one_char(0x0);
+}
+
+void ICACHE_FLASH_ATTR
+digoleserial_enableBacklight(bool backlightOn){
+  uart1_tx_string(backlightOn?"BL1":"BL0");
   uart1_tx_one_char(0x0);
 }
 
@@ -139,24 +108,18 @@ digoleserial_setBaud(void){
     uart1_tx_one_char(0x00);
     uart1_tx_string("SB115200\n");
     os_delay_us(50000);
-    UartDev.baut_rate = BIT_RATE_115200; //BIT_RATE_115200;
+    UartDev.baut_rate = 115200; //BIT_RATE_115200;
     digoleserial_uart1_config();
     os_delay_us(100000);
   }
 }
 
-/******************************************************************************
- * FunctionName : uart_init
- * Description  : user interface for init uart
- * Parameters   : UartBautRate uart1_br - uart1 bautrate
- * Returns      : NONE
- *******************************************************************************/
 void ICACHE_FLASH_ATTR
 digoleserial_init(uint8_t col, uint8_t row) {
 
-  UartDev.baut_rate = BIT_RATE_9600;
+  UartDev.baut_rate = 9600;
   digoleserial_uart1_config();
-  os_delay_us(100000);
+
   if (col>4 && row>=1) {
     uart1_tx_string("STCR");
     uart1_tx_one_char(col);
@@ -179,10 +142,5 @@ digoleserial_init(uint8_t col, uint8_t row) {
 
   digoleserial_lcdClear();
   digoleserial_enableCursor(false);
-
-  //ETS_UART_INTR_ENABLE();
-
-  // install uart1 putc callback, no don't do that - then os_printf will use uart1 as well.
-  //os_install_putc2((void *) uart1_write_char);
 }
 

@@ -21,12 +21,13 @@ loop(os_event_t *events) {
   static int counter = 0;
   os_sprintf(buffer, "Hello uart0 %d\n", counter&3);
   os_printf(buffer);
-  os_sprintf(buffer, "Hello uart1 %d   \n", counter);
+  os_sprintf(buffer, "Hello ua\nrt1 %d   \n", counter);
   if (counter%3==0) digoleserial_lcdClear();
   if (counter==2) digoleserial_setBaud();
   digoleserial_enableCursor(false);
   digoleserial_gotoXY(0,counter&3);
   digoleserial_lcdNString(buffer,15);
+  digoleserial_enableBacklight(counter&2);
   counter += 1;
   os_delay_us(1500000);
   system_os_post(user_procTaskPrio, 0, 0);
