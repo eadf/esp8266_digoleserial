@@ -22,7 +22,9 @@ loop(os_event_t *events) {
   os_sprintf(buffer, "Hello uart0 %d\n", counter&3);
   os_printf(buffer);
   os_sprintf(buffer, "Hello uart1 %d   \n", counter);
-  if (counter%4==0) digoleserial_lcdClear();
+  if (counter%3==0) digoleserial_lcdClear();
+  if (counter==2) digoleserial_setBaud();
+  digoleserial_enableCursor(false);
   digoleserial_gotoXY(0,counter&3);
   digoleserial_lcdNString(buffer,15);
   counter += 1;

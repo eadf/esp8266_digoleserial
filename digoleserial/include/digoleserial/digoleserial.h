@@ -94,6 +94,7 @@ void digoleserial_lcdClear(void);
 void digoleserial_enableCursor(bool cursorOn);
 void digoleserial_lcdCharacter(uint8_t character);
 void digoleserial_gotoXY(uint8_t x, uint8_t y);
+void digoleserial_setBaud(void);
 
 /**
  * Writes an optionally null terminated string
