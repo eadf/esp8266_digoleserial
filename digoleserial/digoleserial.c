@@ -6,6 +6,10 @@
 
 #define UART1   1
 
+// commands
+#define LCD_SETCGRAMADDR 0x40
+#define LCD_RETURNHOME 0x02
+
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
 
@@ -42,16 +46,38 @@ uart1_tx_one_char(uint8_t TxChar) {
 }
 
 static void ICACHE_FLASH_ATTR
-uart1_tx_string(uint8_t  *buf) {
+uart1_tx_string(uint8_t *buf) {
   for (;*buf;buf++){
     uart1_tx_one_char(*buf);
   }
 }
 
+void digoleserial_directCommand(uint8_t d) {
+  uart1_tx_string("MCD");
+  uart1_tx_one_char(d);
+}
+
+void digoleserial_directData(uint8_t d) {
+  uart1_tx_string("MDT");
+  uart1_tx_one_char(d);
+}
+
+// Allows us to fill the first 8 CGRAM locations
+// with custom characters
+void digoleserial_createChar(uint8_t location, uint8_t charmap[]) {
+  location &= 0x7; // we only have 8 locations 0-7
+  digoleserial_directCommand(LCD_SETCGRAMADDR | (location << 3));
+  int i=0;
+  for (; i<8; i++) {
+    digoleserial_directData(charmap[i]);
+  }
+  os_delay_us(5000);
+}
+
 void ICACHE_FLASH_ATTR
 digoleserial_lcdCharacter(uint8_t c) {
   if (c == '\n') {
-    uart1_tx_one_char(0x0d);
+    uart1_tx_one_char(0x00);
     uart1_tx_string("TRT\n");
     uart1_tx_string("TT");
   } else if (c == '\r') {
@@ -67,14 +93,38 @@ digoleserial_lcdNString(uint8_t *buf, uint16_t len){
   for (i = 0; i < len; i++) {
     digoleserial_lcdCharacter(buf[i]);
   }
-  uart1_tx_one_char(0x0d);
+  uart1_tx_one_char(0x00);
 }
+
+void ICACHE_FLASH_ATTR
+digoleserial_writeCustomChars(uint8_t *buf, uint16_t len){
+  uint16 i;
+  if (true){
+    for (i = 0; i < len; i++) {
+      digoleserial_directData(buf[i]);
+    }
+  } else {
+    uart1_tx_string("TT");
+    for (i = 0; i < len; i++) {
+      if (buf[i] == 0){
+        uart1_tx_one_char(0x00);
+        digoleserial_directData(buf[i]);
+        uart1_tx_string("TT");
+      } else {
+        digoleserial_lcdCharacter(buf[i]);
+      }
+    }
+  }
+  uart1_tx_one_char(0x00);
+}
+
 
 void ICACHE_FLASH_ATTR
 digoleserial_gotoXY(uint8_t x, uint8_t y){
   uart1_tx_string("TP");
   uart1_tx_one_char(x);
   uart1_tx_one_char(y);
+  os_delay_us(2000);
 }
 
 void ICACHE_FLASH_ATTR
@@ -95,20 +145,27 @@ digoleserial_enableBacklight(bool backlightOn){
 }
 
 void ICACHE_FLASH_ATTR
-digoleserial_lcdClear(void){
+digoleserial_lcdClear(void) {
   uart1_tx_one_char(0x0);
   uart1_tx_string("CL");
   uart1_tx_one_char(0x0d);
   uart1_tx_one_char(0x0);
+  os_delay_us(2000);  // this command takes a long time!
+}
+
+void ICACHE_FLASH_ATTR
+digoleserial_lcdHome(void) {
+  digoleserial_directCommand(LCD_RETURNHOME);  // set cursor position to zero
+  os_delay_us(2000);  // this command takes a long time!
 }
 
 void ICACHE_FLASH_ATTR
 digoleserial_setBaud(void){
   if (true) {
     uart1_tx_one_char(0x00);
-    uart1_tx_string("SB115200\n");
+    uart1_tx_string("SB57600\n");
     os_delay_us(50000);
-    UartDev.baut_rate = 115200; //BIT_RATE_115200;
+    UartDev.baut_rate = 57600; //BIT_RATE_115200;
     digoleserial_uart1_config();
     os_delay_us(100000);
   }
@@ -119,7 +176,15 @@ digoleserial_init(uint8_t col, uint8_t row) {
 
   UartDev.baut_rate = 9600;
   digoleserial_uart1_config();
-
+  os_delay_us(10000);
+  // Sometimes, or rather often actually, the initial sync is problematic
+  digoleserial_lcdClear();
+  digoleserial_enableCursor(false);
+  digoleserial_lcdClear();
+  digoleserial_enableCursor(false);
+  digoleserial_lcdClear();
+  digoleserial_enableCursor(false);
+  // set display size
   if (col>4 && row>=1) {
     uart1_tx_string("STCR");
     uart1_tx_one_char(col);
@@ -134,13 +199,11 @@ digoleserial_init(uint8_t col, uint8_t row) {
 
   //digoleserial_setBaud();
   uart1_tx_one_char(0x0d);
-  os_delay_us(100000);
+  os_delay_us(10000);
   uart1_tx_one_char(0x0d);
   digoleserial_lcdClear();
   digoleserial_enableCursor(false);
   os_delay_us(10000);
-
-  digoleserial_lcdClear();
-  digoleserial_enableCursor(false);
+  digoleserial_lcdString("Screen initiated");
 }
 
