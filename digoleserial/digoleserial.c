@@ -5,6 +5,7 @@
 #include "string.h"
 
 #define UART1   1
+#undef DEBUG_DIGOLE
 
 // commands
 #define LCD_SETCGRAMADDR 0x40
@@ -24,11 +25,13 @@ static void uart1_tx_string(uint8_t *buf);
  *******************************************************************************/
 LOCAL void ICACHE_FLASH_ATTR
 digoleserial_uart1_config(void) {
+  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+  //os_delay_us(10000);
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
   uart_div_modify(UART1, UART_CLK_FREQ / (UartDev.baut_rate));
   WRITE_PERI_REG(UART_CONF0(UART1),
       UartDev.exist_parity | UartDev.parity | (UartDev.stop_bits << UART_STOP_BIT_NUM_S) | (UartDev.data_bits << UART_BIT_NUM_S));
-  os_delay_us(100000);
+  os_delay_us(10000);
 }
 
 static STATUS ICACHE_FLASH_ATTR
@@ -42,6 +45,16 @@ uart1_tx_one_char(uint8_t TxChar) {
   }
 
   WRITE_PERI_REG(UART_FIFO(UART1), TxChar);
+#ifdef DEBUG_DIGOLE
+  if (TxChar>=0x20 && TxChar<=0x7E ) {
+    os_printf("%c",TxChar);
+  } else if (TxChar==0x0D ) {
+    os_printf("0x%02X", TxChar);
+    os_printf("\n");
+  } else {
+    os_printf("0x%02X", TxChar);
+  }
+#endif
   return OK;
 }
 
@@ -65,6 +78,9 @@ void digoleserial_directData(uint8_t d) {
 // Allows us to fill the first 8 CGRAM locations
 // with custom characters
 void digoleserial_createChar(uint8_t location, uint8_t charmap[]) {
+#ifdef DEBUG_DIGOLE
+  os_printf("\n#Creating custom font %d on uart1#\n", location);
+#endif
   location &= 0x7; // we only have 8 locations 0-7
   digoleserial_directCommand(LCD_SETCGRAMADDR | (location << 3));
   int i=0;
@@ -72,18 +88,22 @@ void digoleserial_createChar(uint8_t location, uint8_t charmap[]) {
     digoleserial_directData(charmap[i]);
   }
   os_delay_us(5000);
+#ifdef DEBUG_DIGOLE
+  os_printf("\n#Created custom font %d on uart1#\n", location);
+#endif
 }
 
 void ICACHE_FLASH_ATTR
 digoleserial_lcdCharacter(uint8_t c) {
-  if (c == '\n') {
-    uart1_tx_one_char(0x00);
+  /*if (c == '\n') {
+    //uart1_tx_one_char(0x00);
     uart1_tx_string("TRT\n");
     uart1_tx_string("TT");
-  } else if (c == '\r') {
-  } else {
+  } //else if (c == '\r') {
+  *///}
+  //else {
     uart1_tx_one_char(c);
-  }
+  //}
 }
 
 void ICACHE_FLASH_ATTR
@@ -93,7 +113,7 @@ digoleserial_lcdNString(uint8_t *buf, uint16_t len){
   for (i = 0; i < len; i++) {
     digoleserial_lcdCharacter(buf[i]);
   }
-  uart1_tx_one_char(0x00);
+  uart1_tx_one_char(0x0d);
 }
 
 void ICACHE_FLASH_ATTR
@@ -135,7 +155,7 @@ digoleserial_lcdString(uint8_t *buf) {
 void ICACHE_FLASH_ATTR
 digoleserial_enableCursor(bool cursorOn){
   uart1_tx_string(cursorOn?"CS1":"CS0");
-  uart1_tx_one_char(0x0);
+  //uart1_tx_one_char(0x0);
 }
 
 void ICACHE_FLASH_ATTR
@@ -146,10 +166,10 @@ digoleserial_enableBacklight(bool backlightOn){
 
 void ICACHE_FLASH_ATTR
 digoleserial_lcdClear(void) {
-  uart1_tx_one_char(0x0);
+  //uart1_tx_one_char(0x0);
   uart1_tx_string("CL");
-  uart1_tx_one_char(0x0d);
-  uart1_tx_one_char(0x0);
+  //uart1_tx_one_char(0x0d);
+  //uart1_tx_one_char(0x0);
   os_delay_us(2000);  // this command takes a long time!
 }
 
@@ -161,13 +181,25 @@ digoleserial_lcdHome(void) {
 
 void ICACHE_FLASH_ATTR
 digoleserial_setBaud(void){
-  if (true) {
-    uart1_tx_one_char(0x00);
-    uart1_tx_string("SB57600\n");
-    os_delay_us(50000);
-    UartDev.baut_rate = 57600; //BIT_RATE_115200;
-    digoleserial_uart1_config();
+  if (false) { // setBaud does NOT work!!!
+
+    //digoleserial_lcdNString("Switching to 115200", 18);
+    os_printf("\n#Switching to 115200 on uart1#\n");
+    //uart1_tx_one_char(0x00);
+    digoleserial_lcdNString("", 0); //Sync up
+    digoleserial_lcdNString("", 0); //Sync up
+    //digoleserial_lcdClear();
+    uart1_tx_string("SB5115200\n");
+    uart1_tx_one_char(0x0D);
     os_delay_us(100000);
+    UartDev.baut_rate = BIT_RATE_115200; //BIT_RATE_115200;
+    UartDev.exist_parity = STICK_PARITY_DIS;
+    UartDev.stop_bits = ONE_STOP_BIT;
+    UartDev.data_bits = EIGHT_BITS;
+    digoleserial_uart1_config();
+    os_delay_us(20000);
+    digoleserial_lcdNString("Switched to 115200", 18);
+    os_printf("\n#Switched to 115200 on uart1#\n");
   }
 }
 
@@ -176,12 +208,14 @@ digoleserial_init(uint8_t col, uint8_t row) {
 
   UartDev.baut_rate = 9600;
   digoleserial_uart1_config();
-  os_delay_us(10000);
+  os_delay_us(100000);
+  digoleserial_setBaud();
+  digoleserial_lcdClear();
+
+  //digoleserial_lcdNString("", 0); //Sync up
+  //digoleserial_lcdNString("", 0); //Sync up
+
   // Sometimes, or rather often actually, the initial sync is problematic
-  digoleserial_lcdClear();
-  digoleserial_enableCursor(false);
-  digoleserial_lcdClear();
-  digoleserial_enableCursor(false);
   digoleserial_lcdClear();
   digoleserial_enableCursor(false);
   // set display size
@@ -197,10 +231,6 @@ digoleserial_init(uint8_t col, uint8_t row) {
     os_delay_us(10000);
   }
 
-  //digoleserial_setBaud();
-  uart1_tx_one_char(0x0d);
-  os_delay_us(10000);
-  uart1_tx_one_char(0x0d);
   digoleserial_lcdClear();
   digoleserial_enableCursor(false);
   os_delay_us(10000);

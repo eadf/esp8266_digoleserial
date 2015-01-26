@@ -116,8 +116,10 @@ static uint8_t bn1[]={B,2,1, 2,1,A, 2,2,1, 2,2,1, 0,A,B, B,2,2, 0,2,2, 2,2,B, 0,
 static uint8_t bn2[]={B,A,B, A,B,A, 0,6,5, A,2,1, 5,6,B, 2,2,1, B,6,7, A,0,5, B,6,B, 4,6,B};
 static uint8_t bn3[]={4,3,B, 3,B,3, B,3,3, 4,3,B, A,A,B, 4,3,B, 4,3,B, A,B,A, 4,3,B, A,A,B};
 
+void bigint_printDigit(uint8_t xPos, uint8_t digit, uint8_t line);
+
 void ICACHE_FLASH_ATTR
-bigint_print1Digit(uint8_t xPos, uint8_t digit, uint8_t line) {
+bigint_printDigit(uint8_t xPos, uint8_t digit, uint8_t line) {
   uint8_t buffer[] = "   ";
   digit = digit % 10;
   switch (line) {
@@ -146,19 +148,29 @@ bigint_print1Digit(uint8_t xPos, uint8_t digit, uint8_t line) {
 }
 
 void ICACHE_FLASH_ATTR
+bigint_print1Digit(uint8_t xPos, uint16_t number){
+  uint8_t number10e0 = (number%10);
+  uint8_t i = 0;
+  for (i=0; i<3; i++){
+    digoleserial_gotoXY(xPos,i);
+    digoleserial_lcdNString("",0);
+    bigint_printDigit(xPos+4, number10e0, i);
+  }
+}
+
+void ICACHE_FLASH_ATTR
 bigint_print2Digits(uint8_t xPos, uint16_t number){
   uint8_t number10e1 = (number/10);
   uint8_t number10e0 = (number%10);
   uint8_t i = 0;
   for (i=0; i<3; i++){
     digoleserial_gotoXY(xPos,i);
-    bigint_print1Digit(xPos, number10e1, i);
+    digoleserial_lcdNString("",0); // required to make the gotoXY work
+    bigint_printDigit(xPos, number10e1, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+4, number10e0, i);
-    digoleserial_lcdNString("\n",1);
+    bigint_printDigit(xPos+4, number10e0, i);
   }
 }
-
 
 void ICACHE_FLASH_ATTR
 bigint_print3Digits(uint8_t xPos, uint16_t number){
@@ -171,12 +183,12 @@ bigint_print3Digits(uint8_t xPos, uint16_t number){
   //uint8_t buffer[] = " ";
   for (i=0; i<3; i++){
     digoleserial_gotoXY(xPos,i);
-    bigint_print1Digit(xPos+0, number10e2, i);
+    digoleserial_lcdNString("",0); // required to make the gotoXY work
+    bigint_printDigit(xPos+0, number10e2, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+4, number10e1, i);
+    bigint_printDigit(xPos+4, number10e1, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+8, number10e0, i);
-    digoleserial_lcdNString("\n",1);
+    bigint_printDigit(xPos+8, number10e0, i);
   }
 }
 
@@ -192,14 +204,14 @@ bigint_print4Digits(uint8_t xPos, uint16_t number){
   uint8_t i = 0;
   for (i=0; i<3; i++){
     digoleserial_gotoXY(xPos,i);
-    bigint_print1Digit(xPos+0,  number10e3, i);
+    digoleserial_lcdNString("",0); // required to make the gotoXY work
+    bigint_printDigit(xPos+0,  number10e3, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+4,  number10e2, i);
+    bigint_printDigit(xPos+4,  number10e2, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+8,  number10e1, i);
+    bigint_printDigit(xPos+8,  number10e1, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+12, number10e0, i);
-    digoleserial_lcdNString("\n",1);
+    bigint_printDigit(xPos+12, number10e0, i);
   }
 }
 
@@ -213,20 +225,19 @@ bigint_print5Digits(uint8_t xPos, uint32_t number) {
   rest = rest%100;
   uint8_t number10e1 = rest/10;
   uint8_t number10e0 = rest%10;
-
   uint8_t i = 0;
   for (i=0; i<3; i++){
     digoleserial_gotoXY(xPos,i);
-    bigint_print1Digit(xPos+0,  number10e4, i);
+    digoleserial_lcdNString("",0); // required to make the gotoXY work
+    bigint_printDigit(xPos+0,  number10e4, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+4,  number10e3, i);
+    bigint_printDigit(xPos+4,  number10e3, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+8,  number10e2, i);
+    bigint_printDigit(xPos+8,  number10e2, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+12,  number10e1, i);
+    bigint_printDigit(xPos+12,  number10e1, i);
     digoleserial_writeCustomChars(" ",1);
-    bigint_print1Digit(xPos+16, number10e0, i);
-    digoleserial_lcdNString("\n",1);
+    bigint_printDigit(xPos+16, number10e0, i);
   }
 }
 
@@ -241,4 +252,5 @@ bigint_init(void) {
   digoleserial_createChar(5,cc5);  // cc5 becomes uint8_tacter 5
   digoleserial_createChar(6,cc6);  // cc6 becomes uint8_tacter 6
   digoleserial_createChar(7,cc7);  // cc7 becomes uint8_tacter 7
+  digoleserial_createChar(0,cc0);  // cc0 becomes uint8_tacter 0  // do char 0 again, it always fails first time
 }

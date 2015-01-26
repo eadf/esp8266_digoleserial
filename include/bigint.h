@@ -7,7 +7,7 @@
 #define INCLUDE_BIGINT_H_
 
 void bigint_init(void);
-void bigint_print1Digit(uint8_t xPos, uint8_t digit, uint8_t line);
+void bigint_print1Digit(uint8_t xPos, uint16_t digit);
 void bigint_print2Digits(uint8_t xPos, uint16_t digit);
 void bigint_print3Digits(uint8_t xPos, uint16_t digit);
 void bigint_print4Digits(uint8_t xPos, uint16_t digit);
