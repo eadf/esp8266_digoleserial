@@ -13,7 +13,7 @@
 
 #define tachometer_micros  (0x7FFFFFFF & system_get_time())
 #define TACHOMETER_PIN 0
-#define TACHOMETER_POLL_TIME 250 // 250ms
+#define TACHOMETER_POLL_TIME 500 // 500ms
 
 static volatile uint32_t   tachometer_timeStamp = 0;
 static volatile uint32_t   tachometer_pulses = 0;
@@ -52,25 +52,29 @@ void ICACHE_FLASH_ATTR
 tachometer_timerFunc(void) {
   static uint16 counter = 0;
 
-  tachometer_disableInterrupt();
+  // save the state as 'atomic' as possible
+  //tachometer_disableInterrupt();
   uint32_t now = tachometer_micros;
-  int32 period =  now - tachometer_timeStamp;
+  uint32_t prevTimeStamp = tachometer_timeStamp;
   uint32_t pulses = tachometer_pulses;
-  tachometer_pulses = 0;
   tachometer_timeStamp = now;
-  tachometer_enableInterrupt();
+  tachometer_pulses = 0;
+  //tachometer_enableInterrupt();
+
+  int32 period =  now - prevTimeStamp;
   bool aBit = GPIO_INPUT_GET(TACHOMETER_PIN);
   if (period>0){
     tachometer_sample = (1000000.0*(float)pulses)/(float)period;
+    if (counter%3 == 0) {
+      // print this every 4:th iteration
+      os_printf("RPM: pulses: %d period:%d us ", pulses, period);
+      os_printf("pinValue:%c tachometer_sample=%d\n",aBit?'1':'0', tachometer_sample);
+    }
   }
-  if (counter%4 == 0) {
-    // print this every 4:th iteration
-    os_printf("RPM: pulses: %d period:%d us ", pulses, period);
-    os_printf("pinValue:%c tachometer_sample=%d\n",aBit?'1':'0', tachometer_sample);
-  }
+
   counter += 1;
-  os_timer_disarm(&tachometer_timer);
-  os_timer_arm(&tachometer_timer, TACHOMETER_POLL_TIME, 0);
+  //os_timer_disarm(&tachometer_timer);
+  //os_timer_arm(&tachometer_timer, TACHOMETER_POLL_TIME, 0);
 }
 
 void ICACHE_FLASH_ATTR
@@ -101,5 +105,6 @@ tachometer_init(void) {
   //clear gpio status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(0));
   ETS_GPIO_INTR_ENABLE();
-  os_timer_arm(&tachometer_timer, TACHOMETER_POLL_TIME, 0);
+  os_timer_arm(&tachometer_timer, TACHOMETER_POLL_TIME, 1);
+  tachometer_enableInterrupt();
 }

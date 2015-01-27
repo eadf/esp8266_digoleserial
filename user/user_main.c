@@ -28,7 +28,7 @@ void ICACHE_FLASH_ATTR
 loop(void) {
   static uint8_t iterations = 0;
   uint32_t sample = tachometer_getSample();
-  bigint_print5Digits(0,sample);
+  bigint_print5Digits(0,60*sample);
   digoleserial_gotoXY(0,3);
   os_sprintf(buffer,"freq:%dHz      ",sample);
   digoleserial_lcdString(buffer);
