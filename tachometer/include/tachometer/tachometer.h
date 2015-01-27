@@ -10,6 +10,6 @@
 
 
 uint32_t tachometer_getSample(void);
-void tachometer_init(void);
+void tachometer_init(uint8_t ioPin);
 
 #endif /* TACHOMETER_INCLUDE_TACHOMETER_TACHOMETER_H_ */

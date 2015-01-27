@@ -41,7 +41,7 @@ loop(void) {
 static void ICACHE_FLASH_ATTR
 setup(void) {
   static uint32_t iterations = 0;
-  tachometer_init();
+  tachometer_init(3);
   digoleserial_init(20,4);
   digoleserial_lcdClear();
   digoleserial_enableCursor(false);
