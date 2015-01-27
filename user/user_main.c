@@ -5,37 +5,49 @@
 #include "user_config.h"
 #include "user_interface.h"
 #include "digoleserial/digoleserial.h"
-#include "bigint.h"
+#include "bigint/bigint.h"
+#include "tachometer/tachometer.h"
 #include "driver/stdout.h"
 
 #define user_procTaskPrio        0
 #define user_procTaskQueueLen    1
+static volatile os_timer_t loop_timer;
 os_event_t user_procTaskQueue[user_procTaskQueueLen];
-static void systemTask(os_event_t *events);
+
+// forward declarations
+static void nop_procTask(os_event_t *events);
 void user_init(void);
-void loop(uint32_t iterations);
+void loop(void);
+static void setup(void);
+static char buffer[] = "                                        ";
 
-
-static char buffer[] = "                           ";
-
+/**
+ * This is the main user program loop
+ */
 void ICACHE_FLASH_ATTR
-loop(uint32_t iterations) {
-  //digoleserial_lcdClear();
-  bigint_print5Digits(0,(iterations%100)+5200);
+loop(void) {
+  static uint8_t iterations = 0;
+  uint32_t sample = tachometer_getSample();
+  bigint_print5Digits(0,sample);
+  digoleserial_gotoXY(0,3);
+  os_sprintf(buffer,"freq:%dHz      ",sample);
+  digoleserial_lcdString(buffer);
+  digoleserial_gotoXY(19,3);
+  os_sprintf(buffer,"%c",iterations&1?0b10100001:0b11011111);
+  digoleserial_lcdString(buffer);
+  iterations += 1;
 }
 
-//Main code function
 static void ICACHE_FLASH_ATTR
-systemTask(os_event_t *events) {
+setup(void) {
   static uint32_t iterations = 0;
-  if (iterations<2) {
-    os_printf("noop\n");
-  } else if (iterations==2) {
-    digoleserial_init(20,4);
-    digoleserial_lcdClear();
-    digoleserial_enableCursor(false);
-    bigint_init();
-  } else if (iterations>=3 && iterations<=7 ) {
+  tachometer_init();
+  digoleserial_init(20,4);
+  digoleserial_lcdClear();
+  digoleserial_enableCursor(false);
+  bigint_init();
+
+  if (iterations>=3 && iterations<=7 ) {
     digoleserial_lcdClear();
     digoleserial_gotoXY(0,0);
     digoleserial_lcdString("Digole serial driver");
@@ -47,13 +59,23 @@ systemTask(os_event_t *events) {
     digoleserial_lcdString("esp8266_digoleserial");
   } else if (iterations==8){
     digoleserial_lcdClear();
-    loop(iterations);
+    loop();
   } else if (iterations>8){
-    loop(iterations);
+    loop();
   }
+
   iterations += 1;
-  os_delay_us(1500000);
-  system_os_post(user_procTaskPrio, 0, 0);
+
+  // Start loop timer
+  os_timer_disarm(&loop_timer);
+  os_timer_setfn(&loop_timer, (os_timer_func_t *) loop, NULL);
+  os_timer_arm(&loop_timer, 1000, 1);
+}
+
+//Do nothing function
+static void ICACHE_FLASH_ATTR
+nop_procTask(os_event_t *events) {
+  os_delay_us(10);
 }
 
 //Init function 
@@ -64,9 +86,12 @@ user_init(void) {
   //Set station mode
   wifi_set_opmode( NULL_MODE );
 
-  //Start os task
-  system_os_task(systemTask, user_procTaskPrio, user_procTaskQueue,
-      user_procTaskQueueLen);
+  // Start setup timer
+  os_timer_disarm(&loop_timer);
+  os_timer_setfn(&loop_timer, (os_timer_func_t *) setup, NULL);
+  os_timer_arm(&loop_timer, 2000, 0);
 
+  //Start no-operation os task
+  system_os_task(nop_procTask, user_procTaskPrio, user_procTaskQueue, user_procTaskQueueLen);
   system_os_post(user_procTaskPrio, 0, 0);
 }

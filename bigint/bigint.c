@@ -4,7 +4,7 @@
  */
 
 #include "digoleserial/digoleserial.h"
-#include "bigint.h"
+#include "bigint/bigint.h"
 #include "osapi.h"
 
 /*
@@ -253,4 +253,5 @@ bigint_init(void) {
   digoleserial_createChar(6,cc6);  // cc6 becomes uint8_tacter 6
   digoleserial_createChar(7,cc7);  // cc7 becomes uint8_tacter 7
   digoleserial_createChar(0,cc0);  // cc0 becomes uint8_tacter 0  // do char 0 again, it always fails first time
+  digoleserial_enableCursor(false);
 }
