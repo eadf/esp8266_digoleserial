@@ -9,7 +9,7 @@ As a demonstraton *user_main.c* runs a tachometer that displays the rpm on a 4*2
 
 ![](doc/20x4_lcd.png)
 
-To use the driver in your own project you only need to copy (or git subtree clone) the *digoleserial* and *easygpio* modules to your own project. Then add the module names to your Makefile:
+To use the driver in your own project you only need to copy (or git subtree clone) the *digoleserial* and [*easygpio*](https://github.com/eadf/esp8266_easygpio) modules to your own project. Then add the module names to your Makefile:
 ```
 # which modules (subdirectories) of the project to include in compiling
 MODULES		= driver easygpio digoleserial bigint tachometer user
