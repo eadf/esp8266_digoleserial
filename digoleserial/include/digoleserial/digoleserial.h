@@ -66,7 +66,7 @@ void digoleserial_lcdString(uint8_t *characters);
 void digoleserial_writeCustomChars(uint8_t *buffer, uint16_t len);
 
 /**
- * initiates the lcd
+ * initiates the lcd. It can only be connected to GPI02 (uart1)
  */
 void digoleserial_init(uint8_t col, uint8_t row);
 #endif
