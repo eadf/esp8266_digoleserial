@@ -17,9 +17,42 @@ os_event_t user_procTaskQueue[user_procTaskQueueLen];
 // forward declarations
 static void nop_procTask(os_event_t *events);
 void user_init(void);
+void loop0(void);
 void loop(void);
 static void setup(void);
 static char buffer[] = "                                        ";
+
+/**
+ * This is the 'first few seconds' user program loop
+ */
+void ICACHE_FLASH_ATTR
+loop0(void) {
+  static uint8_t iterations = 0;
+  if (iterations<=5 ) {
+    digoleserial_lcdClear();
+    digoleserial_gotoXY(0,0);
+    digoleserial_lcdString("Digole serial driver");
+    digoleserial_gotoXY(4,1);
+    digoleserial_lcdString("for esp8266");
+    digoleserial_gotoXY(2,2);
+    digoleserial_lcdString("github.com/eadf/  ");
+    digoleserial_gotoXY(0,3);
+    digoleserial_lcdString("esp8266_digoleserial");
+
+    // restart loop0 timer
+    os_timer_disarm(&loop_timer);
+    os_timer_setfn(&loop_timer, (os_timer_func_t *) loop0, NULL);
+    os_timer_arm(&loop_timer, 1000, 0);
+  } else {
+    digoleserial_lcdClear();
+    loop();
+    // Start loop timer, repeating this time
+    os_timer_disarm(&loop_timer);
+    os_timer_setfn(&loop_timer, (os_timer_func_t *) loop, NULL);
+    os_timer_arm(&loop_timer, 1000, 1);
+  }
+  iterations += 1;
+}
 
 /**
  * This is the main user program loop
@@ -33,43 +66,27 @@ loop(void) {
   os_sprintf(buffer,"freq:%dHz      ",sample);
   digoleserial_lcdString(buffer);
   digoleserial_gotoXY(19,3);
+  // toggle the heartbeat symbol
   os_sprintf(buffer,"%c",iterations&1?0b10100001:0b11011111);
   digoleserial_lcdString(buffer);
   iterations += 1;
 }
 
+/**
+ * Setup program. When user_init runs the debug printouts will not always
+ * show on the serial console. So i run the inits in here, 2 seconds later.
+ */
 static void ICACHE_FLASH_ATTR
 setup(void) {
-  static uint32_t iterations = 0;
   tachometer_init(3);
   digoleserial_init(20,4);
   digoleserial_lcdClear();
   digoleserial_enableCursor(false);
   bigint_init();
-
-  if (iterations>=3 && iterations<=7 ) {
-    digoleserial_lcdClear();
-    digoleserial_gotoXY(0,0);
-    digoleserial_lcdString("Digole serial driver");
-    digoleserial_gotoXY(0,1);
-    digoleserial_lcdString("    for esp8266");
-    digoleserial_gotoXY(0,2);
-    digoleserial_lcdString("  github.com/eadf/  ");
-    digoleserial_gotoXY(0,3);
-    digoleserial_lcdString("esp8266_digoleserial");
-  } else if (iterations==8){
-    digoleserial_lcdClear();
-    loop();
-  } else if (iterations>8){
-    loop();
-  }
-
-  iterations += 1;
-
   // Start loop timer
   os_timer_disarm(&loop_timer);
-  os_timer_setfn(&loop_timer, (os_timer_func_t *) loop, NULL);
-  os_timer_arm(&loop_timer, 1000, 1);
+  os_timer_setfn(&loop_timer, (os_timer_func_t *) loop0, NULL);
+  os_timer_arm(&loop_timer, 1000, 0);
 }
 
 //Do nothing function
