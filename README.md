@@ -2,9 +2,9 @@
 
 This is a driver for the digole LCD adapter.
 The adapter requires only one pin so it is possible to run this on an ESP-1.
-The digole driver uses UART1, so it can only be attached to GPIO2.
+This digole serial driver uses UART1, so it can only be attached to GPIO2.
 
-As a demonstraton *user_main.c* runs a tachometer that displays the rpm on the LCD with big digits (no WiFi).
+As a demonstraton *user_main.c* runs a tachometer that displays the rpm on a 4*20 LCD with big digits (no WiFi).
 
 To use the driver in your own project you only need to copy (or git subtree clone) the *digoleserial* and *easygpio* modules to your own project. Then add the module names to your Makefile:
 ```
