@@ -74,7 +74,6 @@ tachometer_timerFunc(void) {
       os_printf("pinValue:%c tachometer_sample=%d\n",aBit?'1':'0', tachometer_sample);
     }
   }
-
   counter += 1;
 }
 
@@ -86,9 +85,11 @@ tachometer_init(uint8_t ioPin) {
   os_timer_disarm(&tachometer_timer);
   os_timer_setfn(&tachometer_timer, (os_timer_func_t *) tachometer_timerFunc, NULL);
 
-  if (easygpio_setupInterrupt(tachometer_pin, false, false, tachometer_intr_handler)) {
+  if (easygpio_attachInterrupt(tachometer_pin, NOPULL, tachometer_intr_handler)) {
     // start the poll/sample timer
     os_timer_arm(&tachometer_timer, TACHOMETER_POLL_TIME, 1);
     tachometer_enableInterrupt();
+  } else {
+    os_printf("tachometer_init failed to set interrupt\n");
   }
 }
