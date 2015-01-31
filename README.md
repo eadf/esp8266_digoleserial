@@ -43,3 +43,7 @@ This code is provided as is, and it is not fit for any purpose.
 The custom characters (and some of the code) defined in bigint.c are copied from some arduino library. Origin unknown.
 
 The rest is GPL v3+
+
+##Required:
+
+esp_iot_sdk_v0.9.4_14_12_19 ( v0.9.5 breaks everything ) 
