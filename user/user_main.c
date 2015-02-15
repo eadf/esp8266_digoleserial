@@ -101,6 +101,7 @@ user_init(void) {
   // The RX pin is no free for GPIO use.
   stdout_init();
 
+  // turn off WiFi for this console only demo
   wifi_station_set_auto_connect(false);
   wifi_station_disconnect();
 
