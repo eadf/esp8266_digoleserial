@@ -7,7 +7,7 @@
 #include "digoleserial/digoleserial.h"
 #include "bigint/bigint.h"
 #include "tachometer/tachometer.h"
-#include "driver/stdout.h"
+#include "stdout/stdout.h"
 
 #define user_procTaskPrio        0
 #define user_procTaskQueueLen    1
@@ -99,7 +99,7 @@ void ICACHE_FLASH_ATTR
 user_init(void) {
   // Make uart0 work with just the TX pin. Baud:115200,n,8,1
   // The RX pin is no free for GPIO use.
-  stdoutInit();
+  stdout_init();
 
   wifi_station_set_auto_connect(false);
   wifi_station_disconnect();
