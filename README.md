@@ -43,6 +43,7 @@ This code is provided as is, and it is not fit for any purpose.
 The custom characters (and some of the code) defined in bigint.c are copied from some arduino library. Origin unknown.
 
 The rest is GPL v3+
+
 The makefile is copied from [esp_mqtt.](https://github.com/tuanpmt/esp_mqtt)
 
 ###Building and installing:
