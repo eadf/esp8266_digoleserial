@@ -12,7 +12,7 @@ As a demonstraton *user_main.c* runs a tachometer that displays the frequency an
 To use the driver in your own project you only need to copy (or git subtree clone) the *digoleserial* and [*easygpio*](https://github.com/eadf/esp8266_easygpio) modules to your own project. Then add the module names to your Makefile:
 ```
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= driver easygpio digoleserial bigint tachometer user
+MODULES	= driver/stdout driver/easygpio digoleserial bigint driver/tachometer user
 ```
 
 You will also have to include the *digoleserial.h* header file to your own code.
